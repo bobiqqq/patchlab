@@ -1,0 +1,8 @@
+{
+  "task": "mass_assignment",
+  "title": "Защита обновления профиля",
+  "description": "Функция получает словарь user с username, role, display_name, bio и служебными полями. Исправьте обновление профиля так, чтобы служебные поля не менялись из data.",
+  "difficulty": "средне",
+  "category": "веб",
+  "weight": 120
+}

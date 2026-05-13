@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card shadow-sm mb-4 border-0">
+      <div class="card-body p-4">
+        <nav aria-label="breadcrumb">
+          <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{{ url_for('dashboard.index') }}">Панель</a></li>
+            <li class="breadcrumb-item active">Задача</li>
+          </ol>
+        </nav>
+        <h1 class="fw-bold mb-3">{{ task.title }}</h1>
+        <div class="mb-4">
+          <span class="badge bg-primary fs-6 me-2">{{ task.category }}</span>
+          <span
+            class="badge {% if task.difficulty == 'легко' %}bg-success{% else %}bg-warning{% endif %} text-dark fs-6">{{
+            task.difficulty }}</span>
+        </div>
+
+        <h5 class="fw-bold">Описание</h5>
+        <p class="lead">{{ task.description }}</p>
+
+        <div class="alert alert-info border-0 shadow-sm mt-4">
+          <h6 class="fw-bold">Цель защиты</h6>
+          <p class="mb-0">Изменяйте только код между строками «### НАЧАЛО БЛОКА РЕДАКТИРОВАНИЯ ###» и «### КОНЕЦ БЛОКА
+            РЕДАКТИРОВАНИЯ ###». Проверка возьмёт только этот блок. Разрешённые импорты: "sqlite3", "html", "secrets",
+            "string", "flask"</p>
+        </div>
+
+        <h5 class="fw-bold mt-4">Исходный код сервиса</h5>
+        <pre class="source-code bg-dark text-light rounded p-3"><code>{{ source_content }}</code></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card shadow-sm border-0 bg-dark text-white mb-4">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3">Проверка патча</h5>
+        <form id="patch-form" class="mb-3">
+          <div class="mb-3">
+            <label for="patch-file" class="form-label small">Файл Python или текстовый файл</label>
+            <input class="form-control form-control-sm" type="file" id="patch-file" name="patch" required>
+          </div>
+          <button type="submit" class="btn btn-success w-100">Загрузить и проверить</button>
+        </form>
+        <div class="d-grid gap-2">
+          <a href="{{ url_for('tasks.download_source', task=task.task) }}" class="btn btn-outline-light">Скачать
+            исходник</a>
+        </div>
+        <div id="status-msg" class="mt-3 small"></div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <h5 class="fw-bold mb-3">История проверок</h5>
+        {% for patch in patches %}
+        <div class="border-bottom pb-2 mb-2">
+          <div><code>{{ patch.filename }}</code></div>
+          <div class="small status-{{ patch.status }}">
+            {% if patch.status == 'patched' %}исправлен
+            {% elif patch.status == 'vulnerable' %}уязвим
+            {% elif patch.status == 'broken' %}сломан
+            {% else %}{{ patch.status }}{% endif %}
+            · {{ patch.score }} очков
+          </div>
+          <div class="small text-muted">{{ patch.checker_output }}</div>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-0">Проверок пока нет.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  document.getElementById('patch-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const btn = e.target.querySelector('button');
+    const msg = document.getElementById('status-msg');
+    const formData = new FormData(e.target);
+
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Проверка...';
+
+    try {
+      const response = await fetch('{{ url_for("api.check_task", task=task.task) }}', {
+        method: 'POST',
+        body: formData
+      });
+      const data = await response.json();
+
+      if (response.ok) {
+        msg.innerHTML = `<div class="text-success">${data.message}</div>`;
+        setTimeout(() => location.reload(), 900);
+      } else {
+        msg.innerHTML = `<div class="text-danger">Ошибка: ${data.error || 'неизвестная ошибка'}</div>`;
+        btn.disabled = false;
+        btn.innerHTML = 'Загрузить и проверить';
+      }
+    } catch (e) {
+      msg.innerHTML = '<div class="text-danger">Ошибка сети.</div>';
+      btn.disabled = false;
+      btn.innerHTML = 'Загрузить и проверить';
+    }
+  });
+</script>
+{% endblock %}
