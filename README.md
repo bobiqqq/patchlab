@@ -1,7 +1,9 @@
 # PatchLab
 
 Учебная Flask-платформа для исправления уязвимых мини-сервисов.
+
 URL: <будет потом>
+Временно ngrok: https://lasonya-nonmicrobic-bettye.ngrok-free.dev
 
 ## Как это работает
 
